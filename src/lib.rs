@@ -18,6 +18,7 @@ use tauri::{
 pub struct InitOptions {
     pub host: Option<String>,
     pub flush_interval: Option<Duration>,
+    pub app_version: Option<String>,
 }
 
 /// The Aptabase Plugin builder
@@ -68,8 +69,12 @@ impl Builder {
         plugin::Builder::new("aptabase")
             .invoke_handler(tauri::generate_handler![commands::track_event])
             .setup(|app, _api| {
+                let app_version = self
+                    .options
+                    .app_version
+                    .clone()
+                    .unwrap_or_else(|| app.package_info().version.to_string());
                 let cfg = Config::new(self.app_key, self.options);
-                let app_version = app.package_info().version.to_string();
                 let client = Arc::new(AptabaseClient::new(&cfg, app_version));
 
                 client.start_polling(cfg.flush_interval);

@@ -140,9 +140,15 @@ impl AptabaseClient {
     }
 
     /// Flushes the event queue, blocking the current thread.
+    ///
+    /// Uses `tauri::async_runtime::block_on` so the future runs on
+    /// Tauri's tokio runtime — `reqwest`'s request-timeout path needs
+    /// a Tokio reactor for `tokio::time::sleep`, which the plain
+    /// `futures::executor::block_on` doesn't provide. The on-exit /
+    /// panic-hook paths that call into here aren't inside a Tokio
+    /// task themselves (event-loop thread / panic-handler thread), so
+    /// dispatching to Tauri's runtime is safe and reactor-equipped.
     pub fn flush_blocking(&self) {
-        futures::executor::block_on(async {
-            self.flush().await;
-        });
+        tauri::async_runtime::block_on(self.flush());
     }
 }
